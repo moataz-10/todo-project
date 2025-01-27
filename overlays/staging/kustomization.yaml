@@ -8,10 +8,10 @@ resources:
 images:
 - name: PROJECT/IMAGE1
   newName: mo3mo3/todo-front
-  newTag: v3
+  newTag: ea6cbbcf04160e9138cd9edd328b9fdd3f3155bd
 - name: PROJECT/IMAGE2
   newName: mo3mo3/backend
-  newTag: v6
+  newTag: ea6cbbcf04160e9138cd9edd328b9fdd3f3155bd
 - name: PROJECT/IMAGE3
   newName: mo3mo3/broadcaster
-  newTag: v1
+  newTag: ea6cbbcf04160e9138cd9edd328b9fdd3f3155bd
