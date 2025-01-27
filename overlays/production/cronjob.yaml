@@ -1,0 +1,34 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: db-backup
+  namespace: production
+spec:
+  schedule: "0 2 * * *"
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: db-backup
+          annotations:
+            gke-gcsfuse/volumes: "true"
+        spec:
+          serviceAccountName: db-backup
+          containers:
+          - name: backup
+            image: postgres:latest
+            envFrom:
+            - configMapRef:
+                name: db-config
+            - secretRef:
+                name: db-secret
+            command: ["sh", "-c", "pg_dump postgresql://$DB_USERNAME:$DB_PASSWORD@$DB_HOST/$DB_NAME > /mnt/cache/backup.sql"]
+            volumeMounts:
+              - name: cache-storage
+                mountPath: /mnt/cache
+          restartPolicy: OnFailure
+          volumes:
+            - name: cache-storage
+              persistentVolumeClaim:
+                claimName: backup-pvc

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Random Image</title>
+  <style>
+    body {
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background-color: #f4f4f9;
+      font-family: Arial, sans-serif;
+    }
+
+    img {
+      max-width: 20%;
+      height: auto;
+      border: 2px solid #ccc;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    form {
+      margin: 20px 0;
+    }
+
+    input[type="text"] {
+      width: 300px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+
+    button {
+      padding: 10px 15px;
+      background-color: #1d3855;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    ul {
+      list-style-type: disc;
+      margin-top: 20px;
+      padding: 0;
+      text-align: left;
+    }
+
+    ul li {
+      margin: 5px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    ul li span {
+      flex-grow: 1;
+    }
+
+    ul li button {
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+  <img src="/image" alt="Hourly Random Image">
+
+  <form id="todo-form">
+    <input
+      type="text"
+      id="todo-input"
+      placeholder="Enter a todo (max 140 chars)"
+    />
+    <button type="submit" id="add-todo-btn">Create TODO</button>
+  </form>
+
+  <ul id="todo-list"></ul>
+
+  <script>
+    const apiUrl = '/todos';
+    const todoForm = document.getElementById('todo-form');
+    const todoInput = document.getElementById('todo-input');
+    const todoList = document.getElementById('todo-list');
+
+    // Function to fetch todos from the backend and display them
+    async function fetchTodos() {
+      try {
+        const response = await fetch(apiUrl);
+        if (!response.ok) {
+          throw new Error(`Error fetching todos: ${response.statusText}`);
+        }
+        const todos = await response.json();
+        console.log('Fetched todos from backend:', todos); // Log the fetched data
+        todoList.innerHTML = ''; // Clear the current list
+
+        todos.forEach((todo) => {
+          const li = document.createElement('li');
+          const textSpan = document.createElement('span');
+          textSpan.textContent = todo.text;
+
+          if (todo.done) {
+            textSpan.style.textDecoration = 'line-through';
+            textSpan.style.color = '#888';
+          }
+
+          const doneButton = document.createElement('button');
+          doneButton.textContent = todo.done ? 'Done' : 'Mark as Done';
+          doneButton.disabled = todo.done;
+          doneButton.addEventListener('click', () => markAsDone(todo.id));
+
+          li.appendChild(textSpan);
+          li.appendChild(doneButton);
+          todoList.appendChild(li);
+        });
+      } catch (error) {
+        console.error('Error in fetchTodos:', error);
+      }
+}
+
+    // Function to mark a TODO as done
+    async function markAsDone(id) {
+      try {
+        const response = await fetch(`${apiUrl}/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ done: true }), // Update the "done" field
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to mark as done: ${response.statusText}`);
+        }
+
+        fetchTodos(); // Refresh the list after marking as done
+      } catch (error) {
+        console.error('Error marking todo as done:', error);
+      }
+    }
+
+    // Function to add a new todo
+    async function addTodo(todo) {
+      try {
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ text: todo, done: false }), // Save with "done: false"
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to add todo: ${response.statusText}`);
+        }
+
+        fetchTodos(); // Refresh the list after adding
+      } catch (error) {
+        console.error('Error adding todo:', error);
+      }
+    }
+
+    // Form submission handler
+    todoForm.addEventListener('submit', (e) => {
+      e.preventDefault(); // Prevent page refresh
+
+      const todo = todoInput.value.trim();
+      if (todo) {
+        addTodo(todo); // Add the todo
+        todoInput.value = ''; // Clear the input field
+      } else {
+        alert('Todo cannot be empty and must be less than 140 characters.');
+      }
+    });
+
+    // Initial fetch to display the current todos
+    fetchTodos();
+  </script>
+</body>
+</html>

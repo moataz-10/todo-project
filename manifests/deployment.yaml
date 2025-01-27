@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: front-dep
+  labels:
+    app: front-dep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: front-dep
+  template:
+    metadata:
+      name: front-dep
+      labels:
+        app: front-dep
+    spec:
+      volumes:
+        - name: image-vol
+          persistentVolumeClaim:
+            claimName: front-claim
+
+      containers:
+        - name: frontfront-app
+          image: PROJECT/IMAGE1
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - mountPath: /data
+              name: image-vol
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: back-dep
+  labels:
+    app: back-dep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: back-dep
+  template:
+    metadata:
+      name: back-dep
+      labels:
+        app: back-dep
+    spec:
+      containers:
+        - name: backend-app
+          image: PROJECT/IMAGE2
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: back-config
+          readinessProbe:
+            initialDelaySeconds: 10 
+            periodSeconds: 5 
+            httpGet:
+               path: /todos
+               port: 8080
+          livenessProbe:
+            initialDelaySeconds: 25 
+            periodSeconds: 5 
+            httpGet:
+               path: /todos
+               port: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: broadcaster
+  labels:
+    app: broadcaster
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: broadcaster
+  template:
+    metadata:
+      labels:
+        app: broadcaster
+    spec:
+      containers:
+        - name: broadcaster
+          image: PROJECT/IMAGE3
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - secretRef:
+                name: br-secret

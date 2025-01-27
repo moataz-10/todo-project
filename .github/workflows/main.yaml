@@ -1,0 +1,52 @@
+name: Build and publish application in main
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-publish:
+    name: Build, Push, Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and publish todo-front
+        run: |-
+          docker build --tag "mo3mo3/todo-front:$GITHUB_SHA" todo-front/
+          docker push "mo3mo3/todo-front:$GITHUB_SHA"
+
+      - name: Build and publish backend
+        run: |-
+          docker build --tag "mo3mo3/backend:$GITHUB_SHA" todo-back/
+          docker push "mo3mo3/backend:$GITHUB_SHA"
+
+      - name: Build and publish the broadcaster
+        run: |-
+          docker build --tag "mo3mo3/broadcaster:$GITHUB_SHA" broadcaster/
+          docker push "mo3mo3/broadcaster:$GITHUB_SHA"
+
+      - name: Set up Kustomize
+        uses: imranismail/setup-kustomize@v2
+
+      - name: Use images for staging
+        working-directory: overlays/staging
+        run: |-
+            kustomize edit set image PROJECT/IMAGE1=mo3mo3/todo-front:$GITHUB_SHA
+            kustomize edit set image PROJECT/IMAGE2=mo3mo3/backend:$GITHUB_SHA
+            kustomize edit set image PROJECT/IMAGE3=mo3mo3/broadcaster:$GITHUB_SHA
+
+      - name: Commit kustomization.yaml for staging to GitHub
+        uses: EndBug/add-and-commit@v9
+        with:
+          add: 'overlays/staging/kustomization.yaml'
+          message: New version released for staging ${{ github.sha }}
